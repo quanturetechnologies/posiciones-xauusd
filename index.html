@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oro · XAUUSD — Posiciones</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0c08;
+    --bg-raised: #16130d;
+    --bg-panel: #1a160f;
+    --line: #2e2818;
+    --line-soft: #241f13;
+    --gold: #d9a441;
+    --gold-dim: #8a6c2f;
+    --gold-faint: rgba(217, 164, 65, 0.08);
+    --ink: #ede4d3;
+    --ink-dim: #9a8f7a;
+    --ink-faint: #645c4c;
+    --long: #58c98b;
+    --short: #e56a5a;
+    --flat: #9a8f7a;
+    --font-display: "Fraunces", serif;
+    --font-mono: "IBM Plex Mono", monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    position: relative;
+  }
+
+  /* warm grain + soft gold glow, no gradients-as-decoration: just atmosphere */
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::after {
+    content: "";
+    position: fixed;
+    top: -20vh; right: -10vw;
+    width: 60vw; height: 60vh;
+    background: radial-gradient(ellipse at center, rgba(217,164,65,0.05), transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 20px;
+    margin-bottom: 36px;
+    flex-wrap: wrap;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 34px;
+    letter-spacing: -0.01em;
+  }
+  h1 .sym {
+    color: var(--gold);
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 22px;
+    letter-spacing: 0.12em;
+    vertical-align: 4px;
+    margin-left: 10px;
+  }
+  .tagline { color: var(--ink-dim); font-size: 12px; letter-spacing: 0.04em; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 5fr 7fr;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 22px;
+  }
+
+  .panel h2 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 18px;
+  }
+
+  label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    margin-bottom: 6px;
+  }
+
+  input[type="number"], input[type="text"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 15px;
+    padding: 9px 11px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus { border-color: var(--gold-dim); }
+  input::placeholder { color: var(--ink-faint); }
+  input[type=number]::-webkit-inner-spin-button { opacity: 0.35; }
+
+  .field { margin-bottom: 14px; }
+
+  /* side toggle */
+  .side-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .side-toggle button {
+    padding: 11px 0;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    color: var(--ink-dim);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .side-toggle button.active-buy {
+    border-color: var(--long);
+    color: var(--long);
+    background: rgba(88, 201, 139, 0.07);
+  }
+  .side-toggle button.active-sell {
+    border-color: var(--short);
+    color: var(--short);
+    background: rgba(229, 106, 90, 0.07);
+  }
+
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .btn {
+    width: 100%;
+    margin-top: 4px;
+    padding: 12px 0;
+    background: var(--gold);
+    border: none;
+    border-radius: 4px;
+    color: #171207;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: filter 0.15s;
+  }
+  .btn:hover { filter: brightness(1.1); }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--ink-dim);
+    margin-top: 12px;
+  }
+  .btn-ghost:hover { border-color: var(--short); color: var(--short); filter: none; }
+
+  /* fills list */
+  .fills { margin-top: 22px; }
+  .fills-head {
+    display: grid;
+    grid-template-columns: 70px 1fr 1fr 34px;
+    gap: 8px;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding: 0 2px 8px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .fill-row {
+    display: grid;
+    grid-template-columns: 70px 1fr 1fr 34px;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 2px;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 13px;
+  }
+  .fill-row .side { font-weight: 600; letter-spacing: 0.06em; }
+  .fill-row .side.buy { color: var(--long); }
+  .fill-row .side.sell { color: var(--short); }
+  .fill-del {
+    background: none; border: none;
+    color: var(--ink-faint);
+    font-size: 15px;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+  }
+  .fill-del:hover { color: var(--short); }
+  .fills-empty { color: var(--ink-faint); font-size: 12px; padding: 14px 2px; font-style: italic; }
+
+  /* position readout */
+  .pos-hero {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .badge {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 8px 16px;
+    border-radius: 3px;
+    border: 1px solid var(--line);
+  }
+  .badge.long  { color: var(--long);  border-color: var(--long);  background: rgba(88,201,139,0.08); }
+  .badge.short { color: var(--short); border-color: var(--short); background: rgba(229,106,90,0.08); }
+  .badge.flat  { color: var(--flat); }
+  .pos-oz { font-size: 30px; font-weight: 600; }
+  .pos-oz small { font-size: 13px; color: var(--ink-dim); font-weight: 400; margin-left: 4px; }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px;
+    background: var(--line-soft);
+    border: 1px solid var(--line-soft);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .stat { background: var(--bg-panel); padding: 14px 16px; }
+  .stat .k { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 6px; }
+  .stat .v { font-size: 19px; font-weight: 500; }
+  .stat .v.mono-sm { font-size: 16px; }
+  .v.pos { color: var(--long); }
+  .v.neg { color: var(--short); }
+  .v.dim { color: var(--ink-dim); }
+
+  .total-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+  }
+  .total-line .k {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+  .total-line .v { font-family: var(--font-display); font-size: 30px; font-weight: 600; }
+
+  /* math footnote */
+  details {
+    margin-top: 24px;
+    border-top: 1px dashed var(--line);
+    padding-top: 14px;
+  }
+  summary {
+    cursor: pointer;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  summary:hover { color: var(--gold-dim); }
+  details p {
+    font-size: 12px;
+    color: var(--ink-dim);
+    margin-top: 10px;
+    line-height: 1.7;
+  }
+  details code {
+    color: var(--gold);
+    background: var(--gold-faint);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  /* load animation: one quiet stagger on page open */
+  .panel, header { animation: rise 0.5s ease both; }
+  .panel:nth-child(2) { animation-delay: 0.08s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Posiciones de Oro<span class="sym">XAUUSD</span></h1>
+    <span class="tagline">1 lote = 100 oz &nbsp;·&nbsp; $1 de movimiento = $100 por lote &nbsp;·&nbsp; tus datos quedan en este navegador</span>
+  </header>
+
+  <div class="grid">
+
+    <!-- ======== LEFT: registration + sizing ======== -->
+    <div class="panel">
+      <h2>Registrar operación</h2>
+
+      <div class="side-toggle">
+        <button type="button" id="sideBuy" class="active-buy">COMPRA</button>
+        <button type="button" id="sideSell">VENTA</button>
+      </div>
+
+      <div class="row-2">
+        <div class="field">
+          <label for="inLots">Lotes</label>
+          <input type="number" id="inLots" step="0.01" min="0.01" placeholder="0.10">
+        </div>
+        <div class="field">
+          <label for="inPrice">Precio</label>
+          <input type="number" id="inPrice" step="0.01" min="0.01" placeholder="2000.00">
+        </div>
+      </div>
+
+      <button class="btn" id="btnAdd">Agregar a la posición</button>
+
+      <div class="fills">
+        <div class="fills-head"><span>Lado</span><span>Lotes</span><span>Precio</span><span></span></div>
+        <div id="fillsList"></div>
+      </div>
+
+      <button class="btn btn-ghost" id="btnClear">Vaciar todo</button>
+    </div>
+
+    <!-- ======== RIGHT: position + sizing ======== -->
+    <div style="display:grid; gap:20px;">
+
+      <div class="panel">
+        <h2>Posición abierta</h2>
+
+        <div class="field">
+          <label for="inCurrent">Precio actual del oro (USD)</label>
+          <input type="number" id="inCurrent" step="0.01" min="0" placeholder="p. ej. 2035.40">
+        </div>
+
+        <div class="pos-hero">
+          <span class="badge flat" id="posBadge">PLANO</span>
+          <span class="pos-oz"><span id="posOz">0</span><small>oz netas</small></span>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><div class="k">Oz compradas</div><div class="v" id="stBuyOz">0</div></div>
+          <div class="stat"><div class="k">Oz vendidas</div><div class="v" id="stSellOz">0</div></div>
+          <div class="stat"><div class="k">Precio prom. compra</div><div class="v mono-sm" id="stAvgBuy">—</div></div>
+          <div class="stat"><div class="k">Precio prom. venta</div><div class="v mono-sm" id="stAvgSell">—</div></div>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><div class="k">P&amp;L realizado (FIFO)</div><div class="v" id="stRealized">0.00</div></div>
+          <div class="stat"><div class="k">P&amp;L flotante</div><div class="v" id="stFloating">0.00</div></div>
+        </div>
+
+        <div class="total-line">
+          <span class="k">P&amp;L total</span>
+          <span class="v" id="stTotal">0.00</span>
+        </div>
+
+        <details>
+          <summary>¿Cómo se calcula? — la matemática, sin misterio</summary>
+          <p>
+            <strong>Posición neta:</strong> onzas compradas − onzas vendidas. Si queda positivo vas <em>largo</em>;
+            negativo, <em>corto</em>; cero, <em>plano</em>.<br>
+            <strong>Precio promedio:</strong> suma de (lotes × precio) ÷ lotes totales de ese lado — el promedio
+            ponderado por volumen.<br>
+            <strong>P&amp;L:</strong> cada par compra/venta cerrado da <code>(precio venta − precio compra) × onzas</code>
+            — eso es lo <em>realizado</em>, pareado FIFO. Lo <em>flotante</em> usa el mismo cálculo contra el precio
+            actual con lo que sigue abierto.<br>
+            <strong>Tamaño:</strong> <code>lotes = (capital × % riesgo) ÷ (distancia stop × 100)</code>. El 100 es la
+            cantidad de onzas por lote estándar en XAUUSD.
+          </p>
+        </details>
+      </div>
+
+      <div class="panel">
+        <h2>Tamaño de posición</h2>
+        <div class="row-2">
+          <div class="field">
+            <label for="inCapital">Capital (USD)</label>
+            <input type="number" id="inCapital" step="1" min="0" placeholder="10000">
+          </div>
+          <div class="field">
+            <label for="inRisk">Riesgo por operación (%)</label>
+            <input type="number" id="inRisk" step="0.1" min="0" placeholder="1">
+          </div>
+        </div>
+        <div class="field">
+          <label for="inStop">Distancia al stop (USD de precio)</label>
+          <input type="number" id="inStop" step="0.01" min="0" placeholder="p. ej. 5.00">
+        </div>
+
+        <div class="stats">
+          <div class="stat"><div class="k">Lotes a operar</div><div class="v" id="szLots" style="color: var(--gold);">—</div></div>
+          <div class="stat"><div class="k">Equivalen a</div><div class="v mono-sm" id="szOz">—</div></div>
+          <div class="stat"><div class="k">Riesgo si te dan el stop</div><div class="v mono-sm" id="szRisk">—</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="calc.js"></script>
+<script>
+'use strict';
+
+const LS_TRADES = 'xauusd-trades-v1';
+const LS_SETTINGS = 'xauusd-settings-v1';
+
+let trades = [];
+try { trades = JSON.parse(localStorage.getItem(LS_TRADES) || '[]'); } catch { trades = []; }
+let currentSide = 'buy';
+
+const $ = (id) => document.getElementById(id);
+const usd = (n) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'USD' }).format(n);
+const num = (n, d = 2) => Number(n).toLocaleString('es-AR', { minimumFractionDigits: d, maximumFractionDigits: d });
+
+function persist() {
+  localStorage.setItem(LS_TRADES, JSON.stringify(trades));
+  const settings = {
+    capital: $('inCapital').value,
+    risk: $('inRisk').value,
+    stop: $('inStop').value,
+    current: $('inCurrent').value,
+  };
+  localStorage.setItem(LS_SETTINGS, JSON.stringify(settings));
+}
+
+function signClass(v) {
+  return v > 0.005 ? 'pos' : v < -0.005 ? 'neg' : 'dim';
+}
+
+function renderFills() {
+  const list = $('fillsList');
+  list.innerHTML = '';
+  if (trades.length === 0) {
+    list.innerHTML = '<div class="fills-empty">Todavía no cargaste operaciones. Agregá la primera arriba.</div>';
+    return;
+  }
+  trades.forEach((t, i) => {
+    const row = document.createElement('div');
+    row.className = 'fill-row';
+    row.innerHTML =
+      `<span class="side ${t.side}">${t.side === 'buy' ? 'COMPRA' : 'VENTA'}</span>` +
+      `<span>${num(t.lots)}</span>` +
+      `<span>${num(t.price)}</span>` +
+      `<button class="fill-del" title="Eliminar" data-i="${i}">×</button>`;
+    list.appendChild(row);
+  });
+  list.querySelectorAll('.fill-del').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      trades.splice(Number(btn.dataset.i), 1);
+      persist();
+      render();
+    });
+  });
+}
+
+function renderPosition() {
+  const pos = Calc.netPosition(trades);
+  const current = parseFloat($('inCurrent').value) || null;
+
+  const badge = $('posBadge');
+  badge.textContent = { long: 'LARGO', short: 'CORTO', flat: 'PLANO' }[pos.direction];
+  badge.className = `badge ${pos.direction}`;
+
+  $('posOz').textContent = num(Math.abs(pos.netOz));
+  $('stBuyOz').textContent = num(pos.buyOz);
+  $('stSellOz').textContent = num(pos.sellOz);
+
+  const avgBuy = Calc.averagePrice(trades, 'buy');
+  const avgSell = Calc.averagePrice(trades, 'sell');
+  $('stAvgBuy').textContent = avgBuy === null ? '—' : num(avgBuy);
+  $('stAvgSell').textContent = avgSell === null ? '—' : num(avgSell);
+
+  const realized = Calc.realizedPnl(trades);
+  const floating = current === null ? 0 : Calc.floatingPnl(trades, current);
+  const total = realized + floating;
+
+  $('stRealized').textContent = usd(realized);
+  $('stRealized').className = `v ${signClass(realized)}`;
+  $('stFloating').textContent = current === null ? 'cargá el precio actual' : usd(floating);
+  $('stFloating').className = `v mono-sm ${current === null ? 'dim' : signClass(floating)}`;
+  $('stTotal').textContent = usd(total);
+  $('stTotal').className = `v ${signClass(total)}`;
+}
+
+function renderSizing() {
+  const capital = parseFloat($('inCapital').value);
+  const riskPct = parseFloat($('inRisk').value);
+  const stop = parseFloat($('inStop').value);
+  const size = Calc.positionSize({ capital, riskPct, stopDistance: stop });
+
+  if (size === null) {
+    $('szLots').textContent = '—';
+    $('szOz').textContent = '—';
+    $('szRisk').textContent = '—';
+    return;
+  }
+  $('szLots').textContent = `${num(size.lots)} lotes`;
+  $('szOz').textContent = `${num(size.oz)} oz`;
+  $('szRisk').textContent = usd(size.riskAmount);
+}
+
+function render() {
+  renderFills();
+  renderPosition();
+  renderSizing();
+}
+
+/* ---- events ---- */
+
+$('sideBuy').addEventListener('click', () => {
+  currentSide = 'buy';
+  $('sideBuy').className = 'active-buy';
+  $('sideSell').className = '';
+});
+$('sideSell').addEventListener('click', () => {
+  currentSide = 'sell';
+  $('sideSell').className = 'active-sell';
+  $('sideBuy').className = '';
+});
+
+$('btnAdd').addEventListener('click', () => {
+  const lots = parseFloat($('inLots').value);
+  const price = parseFloat($('inPrice').value);
+  if (!(lots > 0) || !(price > 0)) {
+    $('inLots').focus();
+    return;
+  }
+  trades.push({ side: currentSide, lots, price });
+  $('inLots').value = '';
+  $('inPrice').value = '';
+  $('inLots').focus();
+  persist();
+  render();
+});
+
+// Enter inside the form adds the fill
+['inLots', 'inPrice'].forEach((id) => {
+  $(id).addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') $('btnAdd').click();
+  });
+});
+
+$('btnClear').addEventListener('click', () => {
+  if (trades.length === 0) return;
+  if (confirm('¿Vaciar todas las operaciones registradas?')) {
+    trades = [];
+    persist();
+    render();
+  }
+});
+
+['inCurrent', 'inCapital', 'inRisk', 'inStop'].forEach((id) => {
+  $(id).addEventListener('input', () => { persist(); render(); });
+});
+
+/* ---- restore settings ---- */
+try {
+  const s = JSON.parse(localStorage.getItem(LS_SETTINGS) || '{}');
+  if (s.capital) $('inCapital').value = s.capital;
+  if (s.risk) $('inRisk').value = s.risk;
+  if (s.stop) $('inStop').value = s.stop;
+  if (s.current) $('inCurrent').value = s.current;
+} catch {}
+
+render();
+</script>
+</body>
+</html>
